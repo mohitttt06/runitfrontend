@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useState } from "react"
+import { useEffect, useCallback, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Play, Check } from "lucide-react"
@@ -26,73 +26,83 @@ import { LANGUAGES, type TestCase, type TestResult, type Language } from "@/lib/
 
 export default function EditorPage() {
   const router = useRouter()
-  const { currentProblem, createProblem, updateProblem, saveStatus } = useProblems()
-  
+  const { createProblem, updateProblem, saveStatus } = useProblems()
+
+  // LOCAL STATE — always starts blank for new problem
+  const [localTitle, setLocalTitle] = useState("")
+  const [localDescription, setLocalDescription] = useState("")
+  const [localCode, setLocalCode] = useState("")
+  const [localTestCases, setLocalTestCases] = useState<TestCase[]>([
+    { id: "tc_1", input: "", expectedOutput: "" }
+  ])
+  const [localLanguage, setLocalLanguage] = useState("python")
+  const [problemId, setProblemId] = useState<string | null>(null)
+
   const [isRunning, setIsRunning] = useState(false)
   const [results, setResults] = useState<TestResult[]>([])
   const [consoleOutput, setConsoleOutput] = useState("")
   const [mobileTab, setMobileTab] = useState<"problem" | "code">("problem")
 
-  // Initialize new problem on mount
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Always create a FRESH problem on mount
   useEffect(() => {
-    if (!currentProblem) {
-      createProblem()
+    const newProblem = createProblem()
+    setProblemId(newProblem.id)
+  }, [])
+
+  // Debounced save to Supabase
+  const scheduleSave = useCallback((updates: any) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      updateProblem(updates)
+    }, 2000)
+  }, [updateProblem])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
   }, [])
 
-  // Debounced update
-  const debouncedUpdate = useCallback(
-    debounce((updates: Parameters<typeof updateProblem>[0]) => {
-      updateProblem(updates)
-    }, 1500),
-    [updateProblem]
-  )
-
   const handleTitleChange = (title: string) => {
-    if (currentProblem) {
-      debouncedUpdate({ title })
-    }
+    setLocalTitle(title)
+    scheduleSave({ title })
   }
 
   const handleDescriptionChange = (description: string) => {
-    if (currentProblem) {
-      debouncedUpdate({ description })
-    }
+    setLocalDescription(description)
+    scheduleSave({ description })
   }
 
   const handleLanguageChange = (language: string) => {
-    if (currentProblem) {
-      updateProblem({ language: language as Language })
-    }
+    setLocalLanguage(language)
+    updateProblem({ language: language as Language })
   }
 
   const handleCodeChange = (code: string) => {
-    if (currentProblem) {
-      debouncedUpdate({ code })
-    }
+    setLocalCode(code)
+    scheduleSave({ code })
   }
 
   const handleTestCasesChange = (testCases: TestCase[]) => {
-    if (currentProblem) {
-      debouncedUpdate({ testCases })
-    }
+    setLocalTestCases(testCases)
+    scheduleSave({ testCases })
   }
 
   const handleRunCode = async () => {
-    if (!currentProblem) return
-    
     setIsRunning(true)
     setResults([])
     setConsoleOutput("")
 
     try {
-      const response = await fetch("/api/execute", {
+      const response = await fetch("https://runitbackend.onrender.com/api/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          language: currentProblem.language,
-          code: currentProblem.code,
-          testCases: currentProblem.testCases,
+          language: localLanguage,
+          code: localCode,
+          testCases: localTestCases,
         }),
       })
 
@@ -113,14 +123,6 @@ export default function EditorPage() {
     } finally {
       setIsRunning(false)
     }
-  }
-
-  if (!currentProblem) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Spinner className="w-8 h-8 text-white" />
-      </div>
-    )
   }
 
   const SaveStatusIndicator = () => {
@@ -156,11 +158,8 @@ export default function EditorPage() {
 
             <div className="flex items-center gap-4">
               <SaveStatusIndicator />
-              
-              <Select
-                value={currentProblem.language}
-                onValueChange={handleLanguageChange}
-              >
+
+              <Select value={localLanguage} onValueChange={handleLanguageChange}>
                 <SelectTrigger className="w-[140px] bg-white/5 border-white/10 text-white rounded-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -215,20 +214,20 @@ export default function EditorPage() {
 
             <TabsContent value="problem" className="p-4 mt-0">
               <ProblemPanel
-                title={currentProblem.title}
-                description={currentProblem.description}
-                testCases={currentProblem.testCases}
+                title={localTitle}
+                description={localDescription}
+                testCases={localTestCases}
                 onTitleChange={handleTitleChange}
                 onDescriptionChange={handleDescriptionChange}
                 onTestCasesChange={handleTestCasesChange}
-                code={currentProblem.code}
+                code={localCode}
               />
             </TabsContent>
 
             <TabsContent value="code" className="p-4 mt-0">
               <CodePanel
-                code={currentProblem.code}
-                language={currentProblem.language}
+                code={localCode}
+                language={localLanguage}
                 onCodeChange={handleCodeChange}
                 results={results}
                 consoleOutput={consoleOutput}
@@ -239,24 +238,22 @@ export default function EditorPage() {
 
         {/* Desktop Split View */}
         <div className="hidden md:flex h-[calc(100vh-56px)]">
-          {/* Left Panel - Problem */}
           <div className="w-1/2 border-r border-white/10 overflow-y-auto p-6">
             <ProblemPanel
-              title={currentProblem.title}
-              description={currentProblem.description}
-              testCases={currentProblem.testCases}
+              title={localTitle}
+              description={localDescription}
+              testCases={localTestCases}
               onTitleChange={handleTitleChange}
               onDescriptionChange={handleDescriptionChange}
               onTestCasesChange={handleTestCasesChange}
-              code={currentProblem.code}
+              code={localCode}
             />
           </div>
 
-          {/* Right Panel - Code */}
           <div className="w-1/2 overflow-y-auto p-6">
             <CodePanel
-              code={currentProblem.code}
-              language={currentProblem.language}
+              code={localCode}
+              language={localLanguage}
               onCodeChange={handleCodeChange}
               results={results}
               consoleOutput={consoleOutput}
@@ -268,7 +265,6 @@ export default function EditorPage() {
   )
 }
 
-// Problem Panel Component
 interface ProblemPanelProps {
   title: string
   description: string
@@ -290,7 +286,6 @@ function ProblemPanel({
 }: ProblemPanelProps) {
   return (
     <div className="flex flex-col gap-6">
-      {/* Title */}
       <Input
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
@@ -298,7 +293,6 @@ function ProblemPanel({
         className="bg-transparent border-0 text-2xl font-bold text-white placeholder:text-white/30 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
       />
 
-      {/* Description */}
       <Textarea
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}
@@ -308,7 +302,6 @@ function ProblemPanel({
 
       <div className="h-px bg-white/10" />
 
-      {/* Test Cases */}
       <TestCaseManager
         testCases={testCases}
         onUpdate={onTestCasesChange}
@@ -316,13 +309,16 @@ function ProblemPanel({
 
       <div className="h-px bg-white/10" />
 
-      {/* AI Assistant */}
-      <AIAssistant problemDescription={description} code={code} />
+      <AIAssistant
+        problemDescription={description}
+        code={code}
+        existingTestCases={testCases}
+        onTestCasesGenerated={onTestCasesChange}
+      />
     </div>
   )
 }
 
-// Code Panel Component
 interface CodePanelProps {
   code: string
   language: string
@@ -340,29 +336,15 @@ function CodePanel({
 }: CodePanelProps) {
   return (
     <div className="flex flex-col gap-6">
-      {/* Code Editor */}
       <CodeEditor
         value={code}
         onChange={onCodeChange}
         language={language}
       />
 
-      {/* Results */}
       {results.length > 0 && (
         <ResultsPanel results={results} consoleOutput={consoleOutput} />
       )}
     </div>
   )
-}
-
-// Debounce utility
-function debounce<T extends (...args: Parameters<T>) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
 }
