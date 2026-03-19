@@ -60,15 +60,26 @@ export function AIAssistant({
 ${problemDescription ? `Problem Statement:\n${problemDescription}` : ''}
 ${code ? `User Code:\n${code}` : ''}
 
-Generate exactly ${testCaseCount} diverse test cases.
+Generate exactly ${testCaseCount} diverse test cases for this problem.
 Include simple, edge, and corner cases.
 
-Respond ONLY in this exact JSON format, no extra text outside the JSON:
+VERY IMPORTANT RULES FOR INPUT FORMAT:
+- Input must be in standard competitive programming stdin format
+- NOT in Python or LeetCode format like "nums = [1,2,3], target = 9"
+- Use raw stdin format only
+- For arrays: first line is size, second line is space separated elements
+- For single values: just the value on one line
+- Output must be in raw stdout format only
+- Example correct input for two sum: "4\n2 7 11 15\n9"
+- Example correct output for two sum: "0 1"
+- All inputs and outputs must work directly with stdin and stdout in C++, Java, or Python
+
+Respond ONLY in this exact JSON format with no extra text outside the JSON:
 {
   "testCases": [
     {
-      "input": "exact input here",
-      "expectedOutput": "exact output here",
+      "input": "exact stdin input here",
+      "expectedOutput": "exact stdout output here",
       "description": "what this tests"
     }
   ]
@@ -98,9 +109,9 @@ Respond ONLY in this exact JSON format, no extra text outside the JSON:
       const clean = message.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
 
-      const testCasesArray = parsed.testCases 
-        || parsed.test_cases 
-        || parsed 
+      const testCasesArray = parsed.testCases
+        || parsed.test_cases
+        || parsed
         || []
 
       const newTestCases: TestCase[] = Array.isArray(testCasesArray)
@@ -108,9 +119,9 @@ Respond ONLY in this exact JSON format, no extra text outside the JSON:
             id: `tc_ai_${Date.now()}_${i}`,
             input: String(tc.input || ''),
             expectedOutput: String(
-              tc.expectedOutput 
-              || tc.expected_output 
-              || tc.output 
+              tc.expectedOutput
+              || tc.expected_output
+              || tc.output
               || ''
             )
           }))
