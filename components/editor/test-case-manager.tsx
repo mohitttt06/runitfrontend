@@ -39,7 +39,6 @@ export function TestCaseManager({ testCases, onUpdate }: TestCaseManagerProps) {
       <h3 className="text-sm font-medium text-white/70 uppercase tracking-wider">
         Test Cases
       </h3>
-
       <div className="flex flex-col gap-4">
         {testCases.map((testCase, index) => (
           <div
@@ -59,7 +58,6 @@ export function TestCaseManager({ testCases, onUpdate }: TestCaseManagerProps) {
                 </button>
               )}
             </div>
-
             <div className="flex flex-col gap-3">
               <div>
                 <label className="text-xs text-white/50 mb-1 block">Input</label>
@@ -83,7 +81,6 @@ export function TestCaseManager({ testCases, onUpdate }: TestCaseManagerProps) {
           </div>
         ))}
       </div>
-
       <Button
         onClick={addTestCase}
         variant="ghost"
