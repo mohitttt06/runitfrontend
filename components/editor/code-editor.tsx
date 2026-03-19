@@ -12,11 +12,13 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const lineNumbersRef = useRef<HTMLDivElement>(null)
   const [lineCount, setLineCount] = useState(1)
+  const [highlighted, setHighlighted] = useState("")
 
   useEffect(() => {
     const lines = value.split("\n").length
     setLineCount(Math.max(lines, 25))
-  }, [value])
+    setHighlighted(highlightCode(value))
+  }, [value, language])
 
   const handleScroll = () => {
     if (textareaRef.current && lineNumbersRef.current) {
@@ -66,16 +68,10 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
 
   const getLanguageColor = () => {
     const colors: Record<string, string> = {
-      cpp: "#f97316",
-      c: "#94a3b8",
-      python: "#60a5fa",
-      javascript: "#fbbf24",
-      typescript: "#60a5fa",
-      java: "#f87171",
-      go: "#34d399",
-      rust: "#fb923c",
-      kotlin: "#a78bfa",
-      swift: "#f472b6",
+      cpp: "#f97316", c: "#94a3b8", python: "#60a5fa",
+      javascript: "#fbbf24", typescript: "#60a5fa",
+      java: "#f87171", go: "#34d399", rust: "#fb923c",
+      kotlin: "#a78bfa", swift: "#f472b6",
     }
     return colors[language] || "#94a3b8"
   }
@@ -89,78 +85,85 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
     return exts[language] || "txt"
   }
 
-  const highlightCode = (code: string) => {
+  const highlightCode = (code: string): string => {
     if (!code) return ""
 
-    /*
-      LeetCode color scheme:
-      keywords    → #cc99cd  (soft purple-pink, like VS Code dark+)
-      types       → #56b6c2  (cyan)
-      strings     → #98c379  (green)
-      numbers     → #d19a66  (orange-amber)
-      comments    → #5c6370  (muted gray, italic)
-      functions   → #61afef  (blue)
-      preprocessor→ #e06c75  (red-pink for #include etc)
-      plain text  → #abb2bf  (light gray)
-    */
-
     const keywords: Record<string, string[]> = {
-      cpp: ["int", "void", "return", "if", "else", "for", "while", "do", "break", "continue", "using", "namespace", "std", "cout", "cin", "endl", "auto", "const", "class", "struct", "bool", "true", "false", "nullptr", "new", "delete", "public", "private", "protected", "long", "char", "double", "float", "short", "unsigned", "signed", "static", "inline", "virtual", "override", "template", "typename", "this", "operator"],
+      cpp: ["int", "void", "return", "if", "else", "for", "while", "do", "break", "continue", "using", "namespace", "std", "cout", "cin", "endl", "auto", "const", "class", "struct", "bool", "true", "false", "nullptr", "new", "delete", "public", "private", "protected", "long", "char", "double", "float", "short", "unsigned", "signed", "static", "inline", "virtual", "override", "template", "typename"],
       c: ["int", "void", "return", "if", "else", "for", "while", "do", "break", "continue", "printf", "scanf", "char", "float", "double", "long", "short", "unsigned", "signed", "struct", "typedef", "const", "static", "NULL", "malloc", "free", "sizeof", "enum"],
-      python: ["def", "return", "if", "elif", "else", "for", "while", "in", "not", "and", "or", "import", "from", "class", "True", "False", "None", "print", "range", "len", "break", "continue", "pass", "lambda", "with", "as", "try", "except", "finally", "raise", "global", "nonlocal", "self", "yield", "assert", "del", "is"],
-      javascript: ["const", "let", "var", "function", "return", "if", "else", "for", "while", "break", "continue", "class", "new", "this", "import", "export", "default", "true", "false", "null", "undefined", "typeof", "instanceof", "console", "async", "await", "try", "catch", "finally", "throw", "switch", "case", "of", "in", "delete", "void"],
-      typescript: ["const", "let", "var", "function", "return", "if", "else", "for", "while", "break", "continue", "class", "new", "this", "import", "export", "default", "true", "false", "null", "undefined", "typeof", "instanceof", "async", "await", "try", "catch", "interface", "type", "enum", "extends", "implements", "public", "private", "protected", "readonly", "static"],
-      java: ["int", "void", "return", "if", "else", "for", "while", "break", "continue", "class", "public", "private", "protected", "static", "new", "this", "true", "false", "null", "import", "package", "String", "boolean", "long", "double", "float", "char", "byte", "short", "final", "abstract", "interface", "extends", "implements", "super", "instanceof", "try", "catch", "finally", "throw", "throws"],
-      go: ["func", "return", "if", "else", "for", "break", "continue", "var", "const", "type", "struct", "import", "package", "true", "false", "nil", "new", "make", "len", "cap", "append", "range", "map", "chan", "go", "defer", "select", "switch", "case", "default", "interface"],
-      rust: ["fn", "return", "if", "else", "for", "while", "break", "continue", "let", "mut", "const", "struct", "enum", "impl", "use", "mod", "pub", "true", "false", "None", "Some", "Ok", "Err", "match", "in", "loop", "move", "ref", "self", "Self", "super", "trait", "type", "where", "async", "await"],
+      python: ["def", "return", "if", "elif", "else", "for", "while", "in", "not", "and", "or", "import", "from", "class", "True", "False", "None", "print", "range", "len", "break", "continue", "pass", "lambda", "with", "as", "try", "except", "finally", "raise", "global", "self", "yield"],
+      javascript: ["const", "let", "var", "function", "return", "if", "else", "for", "while", "break", "continue", "class", "new", "this", "import", "export", "default", "true", "false", "null", "undefined", "typeof", "instanceof", "async", "await", "try", "catch", "finally", "throw", "switch", "case"],
+      java: ["int", "void", "return", "if", "else", "for", "while", "break", "continue", "class", "public", "private", "protected", "static", "new", "this", "true", "false", "null", "import", "package", "String", "boolean", "long", "double", "float", "char", "final", "abstract", "interface", "extends", "implements", "try", "catch", "finally", "throw"],
+      go: ["func", "return", "if", "else", "for", "break", "continue", "var", "const", "type", "struct", "import", "package", "true", "false", "nil", "new", "make", "len", "cap", "append", "range", "map", "go", "defer", "select", "switch", "case", "default", "interface"],
+      rust: ["fn", "return", "if", "else", "for", "while", "break", "continue", "let", "mut", "const", "struct", "enum", "impl", "use", "mod", "pub", "true", "false", "None", "Some", "Ok", "Err", "match", "loop", "move", "ref", "self", "trait", "type", "async", "await"],
     }
 
     const langKeywords = keywords[language] || keywords.cpp
 
-    // Escape HTML
-    let escaped = code
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
+    // Process line by line to avoid cross-line issues
+    const lines = code.split("\n")
+    const processedLines = lines.map(line => {
+      // Escape HTML first
+      let processed = line
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
 
-    // Preprocessor directives for C/C++ (#include, #define etc) — BEFORE python comments
-    if (language === 'cpp' || language === 'c') {
-      escaped = escaped.replace(/(#\s*\w+[^\n]*)/g, '<span style="color:#e06c75">$1</span>')
-    }
+      // Check for preprocessor (#include, #define) for C/C++
+      if ((language === "cpp" || language === "c") && processed.trim().startsWith("#")) {
+        return `<span style="color:#e06c75">${processed}</span>`
+      }
 
-    // C/C++/Java style single line comments
-    escaped = escaped.replace(/(\/\/[^\n]*)/g, '<span style="color:#5c6370;font-style:italic">$1</span>')
+      // Check for Python comments
+      if (language === "python") {
+        const commentIdx = processed.indexOf("#")
+        if (commentIdx !== -1) {
+          const before = processed.substring(0, commentIdx)
+          const comment = processed.substring(commentIdx)
+          processed = before + `<span style="color:#5c6370;font-style:italic">${comment}</span>`
+          return applyNonCommentHighlighting(before, langKeywords) + `<span style="color:#5c6370;font-style:italic">${comment}</span>`
+        }
+      }
 
-    // Multi line comments /* */
-    escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#5c6370;font-style:italic">$1</span>')
+      // Check for C++ single line comment
+      const commentIdx = processed.indexOf("//")
+      if (commentIdx !== -1) {
+        const before = processed.substring(0, commentIdx)
+        const comment = processed.substring(commentIdx)
+        return applyNonCommentHighlighting(before, langKeywords) + `<span style="color:#5c6370;font-style:italic">${comment}</span>`
+      }
 
-    // Python comments
-    if (language === 'python') {
-      escaped = escaped.replace(/((?:^|(?<=\n))\s*#[^\n]*)/g, '<span style="color:#5c6370;font-style:italic">$1</span>')
-    }
+      return applyNonCommentHighlighting(processed, langKeywords)
+    })
+
+    return processedLines.join("\n")
+  }
+
+  const applyNonCommentHighlighting = (text: string, langKeywords: string[]): string => {
+    let result = text
 
     // Strings double quotes
-    escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color:#98c379">$1</span>')
+    result = result.replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color:#98c379">$1</span>')
 
-    // Strings single quotes (not inside already highlighted spans)
-    escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, '<span style="color:#98c379">$1</span>')
+    // Strings single quotes
+    result = result.replace(/('(?:[^'\\]|\\.)*')/g, '<span style="color:#98c379">$1</span>')
 
     // Numbers
-    escaped = escaped.replace(/\b(\d+\.?\d*[fFlLuU]*)\b/g, '<span style="color:#d19a66">$1</span>')
+    result = result.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d19a66">$1</span>')
 
     // Keywords
     langKeywords.forEach(keyword => {
       const regex = new RegExp(`\\b(${keyword})\\b`, 'g')
-      escaped = escaped.replace(regex, '<span style="color:#cc99cd">$1</span>')
+      result = result.replace(regex, '<span style="color:#cc99cd">$1</span>')
     })
 
-    // Function/method calls
-    escaped = escaped.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g, '<span style="color:#61afef">$1</span>')
+    // Function calls
+    result = result.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g, '<span style="color:#61afef">$1</span>')
 
-    // Types — PascalCase words
-    escaped = escaped.replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span style="color:#56b6c2">$1</span>')
+    // PascalCase types
+    result = result.replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span style="color:#56b6c2">$1</span>')
 
-    return escaped
+    return result
   }
 
   return (
@@ -222,7 +225,7 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
           className="absolute left-[52px] top-0 right-0 bottom-0 py-4 px-4 font-mono text-sm leading-6 pointer-events-none overflow-hidden whitespace-pre"
           style={{ color: "#abb2bf" }}
           dangerouslySetInnerHTML={{
-            __html: highlightCode(value) || `<span style="color:#4b5263">// Write your ${language} solution here...</span>`
+            __html: highlighted || `<span style="color:#4b5263">// Write your ${language} solution here...</span>`
           }}
         />
 
