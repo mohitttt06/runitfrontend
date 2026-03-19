@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { WebGLShader } from "@/components/ui/web-gl-shader"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-import { Code2, Zap, Trophy, Github, Twitter, Layers, CheckCircle, Terminal } from "lucide-react"
+import { Code2, Zap, Trophy, Terminal } from "lucide-react"
 
 export function Hero() {
   const router = useRouter()
@@ -49,10 +49,13 @@ export function Hero() {
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <WebGLShader />
 
+        {/* bottom fade to merge smoothly into next section */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none" />
+
         <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/50 text-xs mb-8 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Free to use · No setup required
+            Free to use · Sign up to save your work
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-none mb-6">
@@ -63,23 +66,21 @@ export function Hero() {
             Write code, define your own test cases, and instantly see what passes and what fails.
           </p>
 
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={handleStartCoding}
-              disabled={isLoading}
-              className="px-8 py-6 text-base rounded-full text-white border border-white/20 bg-white/10 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] hover:scale-105 hover:bg-white/15 active:scale-95 transition-all duration-300 ease-out disabled:opacity-50"
-            >
-              {isLoading ? "Loading..." : "Start Coding →"}
-            </Button>
-          </div>
+          <Button
+            onClick={handleStartCoding}
+            disabled={isLoading}
+            className="px-8 py-6 text-base rounded-full text-white border border-white/20 bg-white/10 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] hover:scale-105 hover:bg-white/15 active:scale-95 transition-all duration-300 ease-out disabled:opacity-50"
+          >
+            {isLoading ? "Loading..." : "Start Coding →"}
+          </Button>
 
           <p className="mt-6 text-white/25 text-xs">
-            No account needed to explore · Sign up to save your work
+            Create a free account to save problems and track your progress
           </p>
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/20 z-10">
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/20 z-20">
           <span className="text-xs">Scroll to explore</span>
           <div className="w-px h-8 bg-gradient-to-b from-white/20 to-transparent" />
         </div>
@@ -145,7 +146,7 @@ export function Hero() {
                 key={i}
                 className="flex items-start gap-6 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 hover:bg-white/[0.04] transition-all duration-300"
               >
-                <span className="text-4xl font-black text-white/10 leading-none mt-1">{item.step}</span>
+                <span className="text-4xl font-black text-white/10 leading-none mt-1 shrink-0">{item.step}</span>
                 <div>
                   <h3 className="text-white font-semibold mb-1">{item.title}</h3>
                   <p className="text-white/40 text-sm leading-relaxed">{item.desc}</p>
