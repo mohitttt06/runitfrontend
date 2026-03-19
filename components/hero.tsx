@@ -49,13 +49,14 @@ export function Hero() {
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <WebGLShader />
 
-        {/* bottom fade to merge smoothly into next section */}
+        {/* bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/50 text-xs mb-8 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Free to use · Sign up to save your work
+
+          {/* FIXED BADGE — no blinking dot */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/40 text-xs mb-8 backdrop-blur-sm font-mono tracking-wide">
+            &gt;_ free to use
           </div>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-none mb-6">
