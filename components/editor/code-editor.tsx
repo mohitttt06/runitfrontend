@@ -89,7 +89,6 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
     return exts[language] || "txt"
   }
 
-  // Simple syntax highlighting
   const highlightCode = (code: string) => {
     if (!code) return ""
 
@@ -114,7 +113,7 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
 
     // Strings
     escaped = escaped.replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color:#86efac">$1</span>')
-    escaped = escaped.replace(/('(?:[^'\\]|\\.)*')/g, '<span style="color:#86efac">$1</span>')
+    escaped = escaped.replace(/('(?:[^\'\\]|\\.)*')/g, '<span style="color:#86efac">$1</span>')
 
     // Numbers
     escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#fb923c">$1</span>')
@@ -138,7 +137,10 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
     <div className="rounded-xl overflow-hidden border border-white/[0.08]" style={{ background: "#0d0d0f" }}>
 
       {/* Editor Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]" style={{ background: "#111114" }}>
+      <div
+        className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]"
+        style={{ background: "#111114" }}
+      >
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ background: "#ff5f57" }} />
           <div className="w-3 h-3 rounded-full" style={{ background: "#febc2e" }} />
@@ -192,7 +194,7 @@ export function CodeEditor({ value, onChange, language }: CodeEditorProps) {
           }}
         />
 
-        {/* Actual Textarea (transparent, on top) */}
+        {/* Actual Textarea */}
         <textarea
           ref={textareaRef}
           value={value}
