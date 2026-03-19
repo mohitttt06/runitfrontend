@@ -15,6 +15,12 @@ interface TestCase {
   description: string
 }
 
+declare global {
+  interface Window {
+    puter: any
+  }
+}
+
 export function AIAssistant({ problemDescription, code }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -23,6 +29,17 @@ export function AIAssistant({ problemDescription, code }: AIAssistantProps) {
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
   const [generatedCases, setGeneratedCases] = useState<TestCase[]>([])
+
+  // Load Puter script
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://js.puter.com/v2/'
+    script.async = true
+    document.head.appendChild(script)
+    return () => {
+      document.head.removeChild(script)
+    }
+  }, [])
 
   const handleGenerateClick = () => {
     setShowCountModal(true)
@@ -36,27 +53,42 @@ export function AIAssistant({ problemDescription, code }: AIAssistantProps) {
     setSuccessMessage("")
     setErrorMessage("")
 
+    const prompt = `You are a competitive programming assistant.
+
+${problemDescription ? `Problem Statement:\n${problemDescription}` : ''}
+${code ? `User's Code:\n${code}` : ''}
+
+Generate exactly ${testCaseCount} diverse test cases for this problem.
+Include simple cases, edge cases, and corner cases.
+
+Respond ONLY in this exact JSON format with no extra text:
+{
+  "testCases": [
+    {
+      "input": "exact input here",
+      "expectedOutput": "exact expected output here",
+      "description": "what this case tests"
+    }
+  ]
+}`
+
     try {
-      const response = await fetch("https://runitbackend.onrender.com/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          problem: problemDescription,
-          code: code,
-          count: parseInt(testCaseCount)
-        })
+      const response = await window.puter.ai.chat(prompt, {
+        model: 'claude-sonnet-4-5'
       })
 
-      const data = await response.json()
+      const message = typeof response === 'string' 
+        ? response 
+        : response?.message?.content?.[0]?.text || ''
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate")
-      }
+      const clean = message.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(clean)
 
-      setGeneratedCases(data.testCases || [])
-      setSuccessMessage(`✨ ${data.testCases?.length || 0} test cases generated!`)
+      setGeneratedCases(parsed.testCases || [])
+      setSuccessMessage(`✨ ${parsed.testCases?.length || 0} test cases generated!`)
 
     } catch (error) {
+      console.error('Puter error:', error)
       setErrorMessage("Failed to generate. Try again.")
     } finally {
       setIsGenerating(false)
@@ -88,7 +120,6 @@ export function AIAssistant({ problemDescription, code }: AIAssistantProps) {
             Paste your problem description above and click generate. AI will create test cases automatically.
           </p>
 
-          {/* Generate Button */}
           <Button
             onClick={handleGenerateClick}
             disabled={isGenerating}
@@ -108,17 +139,14 @@ export function AIAssistant({ problemDescription, code }: AIAssistantProps) {
             )}
           </Button>
 
-          {/* Success Message */}
           {successMessage && (
             <p className="text-green-400 text-xs mt-3 text-center">{successMessage}</p>
           )}
 
-          {/* Error Message */}
           {errorMessage && (
             <p className="text-red-400 text-xs mt-3 text-center">{errorMessage}</p>
           )}
 
-          {/* Generated Test Cases Preview */}
           {generatedCases.length > 0 && (
             <div className="mt-4 flex flex-col gap-3">
               <p className="text-white/60 text-xs font-medium">Generated Test Cases:</p>
