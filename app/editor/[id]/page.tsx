@@ -348,7 +348,12 @@ function ProblemPanel({
       <div className="h-px bg-white/10" />
 
       {/* AI Assistant */}
-      <AIAssistant problemDescription={description} code={code} />
+      <AIAssistant
+  problemDescription={description}
+  code={code}
+  existingTestCases={testCases}
+  onTestCasesGenerated={onTestCasesChange}
+/>
     </div>
   )
 }
