@@ -63,7 +63,7 @@ ${code ? `User Code:\n${code}` : ''}
 Generate exactly ${testCaseCount} diverse test cases.
 Include simple, edge, and corner cases.
 
-Respond ONLY in this exact JSON format, no extra text:
+Respond ONLY in this exact JSON format, no extra text outside the JSON:
 {
   "testCases": [
     {
@@ -76,32 +76,52 @@ Respond ONLY in this exact JSON format, no extra text:
 
     try {
       if (!window.puter) {
-        throw new Error("Puter not loaded yet. Try again.")
+        throw new Error("AI not loaded yet. Please wait and try again.")
       }
 
       const response = await window.puter.ai.chat(prompt, {
         model: 'claude-sonnet-4-5'
       })
 
+      console.log('Raw puter response:', JSON.stringify(response))
+
       const message = typeof response === 'string'
         ? response
         : response?.message?.content?.[0]?.text
           || response?.content?.[0]?.text
+          || response?.text
+          || JSON.stringify(response)
           || ''
+
+      console.log('Extracted message:', message)
 
       const clean = message.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(clean)
 
-      const newTestCases: TestCase[] = parsed.testCases.map((tc: any, i: number) => ({
-        id: `tc_ai_${Date.now()}_${i}`,
-        input: tc.input,
-        expectedOutput: tc.expectedOutput
-      }))
+      const testCasesArray = parsed.testCases 
+        || parsed.test_cases 
+        || parsed 
+        || []
 
-      // Append to existing test cases
+      const newTestCases: TestCase[] = Array.isArray(testCasesArray)
+        ? testCasesArray.map((tc: any, i: number) => ({
+            id: `tc_ai_${Date.now()}_${i}`,
+            input: String(tc.input || ''),
+            expectedOutput: String(
+              tc.expectedOutput 
+              || tc.expected_output 
+              || tc.output 
+              || ''
+            )
+          }))
+        : []
+
+      if (newTestCases.length === 0) {
+        throw new Error("No test cases generated. Try again.")
+      }
+
       const combined = [...existingTestCases, ...newTestCases]
       onTestCasesGenerated(combined)
-
       setSuccessMessage(`✨ ${newTestCases.length} test cases added!`)
 
     } catch (error: any) {
